@@ -1,0 +1,97 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+<PageTitle>Home</PageTitle>
+
+<h1 class="mb-4">Ejemplo Grilla</h1>
+
+<p>
+    @Message
+</p>
+
+@* Tag para configurar la paginacion de la grilla *@
+
+<Paginator State="paginationState"/>
+
+<QuickGrid Items="People" @ref="QuickGrid" Pagination="paginationState">
+    <PropertyColumn Property="@(p=> p.Id)" Sortable="true" IsDefaultSortColumn="true"
+        InitialSortDirection="SortDirection.Ascending" />
+
+    <PropertyColumn Title="Firts Name" Property="@(p=> p.FirtsName)" Sortable="true" />
+    
+    <PropertyColumn Title="Last Name"
+        Property="@((p) => p.LastName.ToUpper())"
+        Sortable="true" />
+
+    <PropertyColumn Title="Date Of Birth" Property="@(p=> p.DateOfBirth)" Sortable="true" Format="dd-MM-yyyy" />
+    
+    <PropertyColumn Title="Active" Property="@(p=> p.Active)" Sortable="true" >
+        <ColumnOptions>
+            <label>
+                <input type="checkbox" @bind-value="ActiveOnly" @bind-value:after="Filter"/> Active only
+            </label>
+        </ColumnOptions>
+    </PropertyColumn>
+    
+    <PropertyColumn Title="Score" Property="@(p=> p.Score)" Sortable="true" Align="Align.Center" />
+    
+    @* Context es la palabra que usa QuickGrid para referirse al elemento de la de row *@
+    <TemplateColumn>
+        <button class="btn btn-primary" @onclick ="@(()=> Edit(context))">Edit</button>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    public IQueryable<Person> OriginalPeople { get; set; } = null!;
+    public IQueryable<Person> People { get; set; } = null!;
+    QuickGrid<Person> QuickGrid;
+    public string Message { get; set; }
+    private bool ActiveOnly;
+    @* elemento para la configurar la paginacion *@
+    PaginationState paginationState = new () {ItemsPerPage =10};
+
+    @* Metodo para filtrar si las personas estan con el campo active en true a partir de la lista original y la otra *@
+    public async Task Filter ()
+    {
+        if (ActiveOnly)
+        {
+            People = OriginalPeople.Where(p => p.Active);
+        }
+        else
+        {
+            People = OriginalPeople;
+        }
+
+        @* Metodo para refrescar la data en la grid *@
+        await QuickGrid.RefreshDataAsync();
+    }
+    private void Edit (Person p)
+    {
+        Message = "Editing: " + p.LastName;
+    }
+    protected override void OnInitialized()
+    {
+        OriginalPeople = GetPeople().AsQueryable();
+        People = OriginalPeople;
+    }
+
+    public List<Person> GetPeople()
+    {
+        var result = new List<Person>();
+
+        for (var i = 1; i <= 100; i++)
+        {
+            result.Add(new Person
+                {
+                    Id = i,
+                    FirtsName = Faker.Name.First(),
+                    LastName = Faker.Name.Last(),
+                    DateOfBirth = Faker.Identification.DateOfBirth(),
+                    Active = Faker.Boolean.Random(),
+                    Score = Faker.RandomNumber.Next(100)
+                });
+        }
+
+        return result;
+    }
+}
